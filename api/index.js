@@ -1,14 +1,15 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
-const mongoUri = process.env.MONGO_URI;
+const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
 
 if (!mongoUri) {
-  console.error('MONGO_URI is missing. Add it to your .env file or Vercel project settings.');
+  console.error('MONGO_URI is missing. Add it to the project root .env file or Vercel project settings.');
 }
 
 app.use(cors());
