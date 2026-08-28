@@ -1,8 +1,15 @@
+require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
+const mongoUri = process.env.MONGO_URI;
+
+if (!mongoUri) {
+  console.error('MONGO_URI is missing. Add it to your .env file or Vercel project settings.');
+}
 
 app.use(cors());
 app.use(express.json());
@@ -17,10 +24,14 @@ const connectDB = async () => {
     return;
   }
 
+  if (!mongoUri) {
+    throw new Error('MONGO_URI is undefined');
+  }
+
   console.log('Attempting MongoDB connection...');
 
   try {
-    const db = await mongoose.connect(process.env.MONGO_URI);
+    const db = await mongoose.connect(mongoUri);
     isConnected = db.connections[0].readyState;
 
     if (isConnected) {
