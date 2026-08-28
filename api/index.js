@@ -7,25 +7,43 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-console.log('Server is starting...');       
+console.log('Server is starting...');
 
 // Cache the MongoDB connection across serverless invocations
 let isConnected = false;
 const connectDB = async () => {
-  if (isConnected) return;
-  const db = await mongoose.connect(process.env.MONGO_URI);
-  isConnected = db.connections[0].readyState;
   if (isConnected) {
-    console.log('MongoDB connection successful');
+    console.log('MongoDB already connected');
+    return;
+  }
+
+  console.log('Attempting MongoDB connection...');
+
+  try {
+    const db = await mongoose.connect(process.env.MONGO_URI);
+    isConnected = db.connections[0].readyState;
+
+    if (isConnected) {
+      console.log('MongoDB connection successful');
+    } else {
+      console.log('MongoDB connection state not ready');
+    }
+  } catch (err) {
+    console.error('MongoDB connection failed:', err.message);
+    throw err;
   }
 };
 
 // Middleware to ensure DB connection on every API request
 app.use(async (req, res, next) => {
+  console.log(`Incoming request: ${req.method} ${req.originalUrl}`);
+
   try {
     await connectDB();
+    console.log(`Database ready for request: ${req.method} ${req.originalUrl}`);
     next();
   } catch (err) {
+    console.error(`Request failed before DB connection: ${req.method} ${req.originalUrl}`, err.message);
     res.status(500).json({ error: 'Database connection failed' });
   }
 });
@@ -41,22 +59,34 @@ const Ad = mongoose.models.Ad || mongoose.model('Ad', AdSchema);
 
 // API Routes
 app.post('/api/ads', async (req, res) => {
+  console.log('POST /api/ads received:', req.body);
+
   try {
     const { adName, targetUrl, imageUrl } = req.body;
     const newAd = new Ad({ adName, targetUrl, imageUrl });
     await newAd.save();
+    console.log('Ad created successfully:', newAd._id);
     res.status(201).json({ success: true, adId: newAd._id });
   } catch (err) {
+    console.error('Error creating ad:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
 app.get('/api/ads/:id', async (req, res) => {
+  console.log(`GET /api/ads/${req.params.id} request received`);
+
   try {
     const ad = await Ad.findById(req.params.id);
-    if (!ad) return res.status(404).json({ error: 'Ad not found' });
+    if (!ad) {
+      console.log(`Ad not found for ID: ${req.params.id}`);
+      return res.status(404).json({ error: 'Ad not found' });
+    }
+
+    console.log('Ad fetched successfully:', ad._id);
     res.json(ad);
   } catch (err) {
+    console.error(`Error fetching ad ${req.params.id}:`, err.message);
     res.status(500).json({ error: err.message });
   }
 });
