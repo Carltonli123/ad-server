@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ad Configuration Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 p-8">
+    <div class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-4">Create New Ad</h1>
+
+        <form id="adForm" class="space-y-4">
+            <div>
+                <label class="block font-medium">Ad Name</label>
+                <input type="text" id="adName" required class="w-full border p-2 rounded">
+            </div>
+            <div>
+                <label class="block font-medium">Target URL (Landing Page)</label>
+                <input type="url" id="targetUrl" required placeholder="https://example.com"
+                    class="w-full border p-2 rounded">
+            </div>
+            <div>
+                <label class="block font-medium">Image URL</label>
+                <input type="url" id="imageUrl" required placeholder="https://example.com/banner.jpg"
+                    class="w-full border p-2 rounded">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded font-bold">Save Ad</button>
+        </form>
+
+        <div id="result" class="mt-6 hidden">
+            <h2 class="font-bold text-lg mb-2">Embed Code for Publisher</h2>
+            <p class="text-sm text-gray-600 mb-2">Copy and paste this snippet into the publisher's website HTML:</p>
+            <textarea id="embedCode" readonly class="w-full h-32 p-2 border bg-gray-50 text-xs font-mono"></textarea>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('adForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const payload = {
+                adName: document.getElementById('adName').value,
+                targetUrl: document.getElementById('targetUrl').value,
+                imageUrl: document.getElementById('imageUrl').value
+            };
+
+            const res = await fetch('/api/ads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                const serverOrigin = window.location.origin;
+                const code = `<div id="ad-slot-${data.adId}"></div>\n<script src="${serverOrigin}/ad-script.js" data-ad-id="${data.adId}" async><\/script>`;
+
+                document.getElementById('embedCode').value = code;
+                document.getElementById('result').classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+
+</html>
